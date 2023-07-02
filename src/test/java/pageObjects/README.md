@@ -1,0 +1,2 @@
+- Page Object deal with page elements and do action on that page elements
+- Ui interaction steps are the things that can be done on particular page, it basically deals interact with page objects

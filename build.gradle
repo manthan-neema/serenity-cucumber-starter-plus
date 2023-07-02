@@ -1,0 +1,90 @@
+//If your build script needs to use external libraries, you can add them to the script’s classpath in the build script itself
+buildscript {
+    dependencies {
+        classpath("net.serenity-bdd:serenity-single-page-report:3.7.1")
+        classpath("net.serenity-bdd:serenity-json-summary-report:3.7.1")
+    }
+}
+
+plugins {
+    id "net.serenity-bdd.serenity-gradle-plugin" version "3.6.7"
+    id 'java'
+    id 'project-report'
+    id 'eclipse'
+    id 'idea'
+}
+
+
+//tasks that are executed if no other tasks are specified
+defaultTasks 'clean', 'test', 'aggregate', 'reports'
+
+repositories {
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+ext {
+    slf4jVersion = '1.7.7'
+    serenityCoreVersion = '3.7.1'
+    junitVersion = '5.8.2'
+    assertJVersion = '3.22.0'
+    logbackVersion = '1.4.7'
+}
+
+dependencies {
+    testImplementation "net.serenity-bdd:serenity-core:${serenityCoreVersion}",
+            "net.serenity-bdd:serenity-junit5:${serenityCoreVersion}",
+            "net.serenity-bdd:serenity-screenplay:${serenityCoreVersion}",
+            "net.serenity-bdd:serenity-ensure:${serenityCoreVersion}",
+            "net.serenity-bdd:serenity-screenplay-webdriver:${serenityCoreVersion}",
+            "net.serenity-bdd:serenity-cucumber:${serenityCoreVersion}",
+            "net.serenity-bdd:serenity-rest-assured:${serenityCoreVersion}",
+
+            "org.junit.jupiter:junit-jupiter-api:${junitVersion}",
+            "org.assertj:assertj-core:${assertJVersion}",
+            "ch.qos.logback:logback-classic:${logbackVersion}"
+
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+}
+
+//test {
+//    //detail logs
+////    testLogging.showStandardStreams = true
+//    systemProperties System.getProperties()
+//}
+
+//Execute tests in parallel
+tasks.withType(Test).configureEach {
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+    println "maxParallelForks: " + maxParallelForks
+}
+
+//Fork tests into multiple processes
+tasks.withType(Test).configureEach {
+    forkEvery = 100 //it should be 100, but i feel 1 will work in cucumber junit runner classes
+    println "forkEvery: " + forkEvery
+}
+
+
+//Disable reports, Use gradle.properties parameter to enable #createReports=true
+tasks.withType(Test).configureEach {
+    if (!project.hasProperty("createReports")) {
+        reports.html.required = false
+        reports.junitXml.required = false
+    }
+}
+
+serenity {
+    testRoot = "testRunners"
+    requirementsDir = "src/test/resources/features"
+}
+
+serenity {
+    reports = ['single-page-html', 'json-summary']
+}
+
+gradle.startParameter.continueOnFailure = true
+
+test.finalizedBy(aggregate)
